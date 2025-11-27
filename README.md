@@ -37,6 +37,10 @@ Containerization: Docker & Docker Compose
 ````
 # 🖼️ Screenshots
 
+<img width="1275" height="671" alt="Snímek obrazovky 2025-11-27 081653" src="https://github.com/user-attachments/assets/ce0c2d2d-6762-4837-96ea-b7a10d71034d" />
+<img width="1280" height="671" alt="Snímek obrazovky 2025-11-27 081636" src="https://github.com/user-attachments/assets/8e34409a-d0b9-42ea-8074-1e7d8af63776" />
+<img width="1268" height="676" alt="Snímek obrazovky 2025-11-27 081457" src="https://github.com/user-attachments/assets/d6b3e36d-744b-4f27-b5af-86437a9464bc" />
+
 # 🚀 Quick Start
 
 ## 1. Prerequisites
