@@ -1,0 +1,51 @@
+{
+  "enemyTypes": [
+    "skeletonSpearman",
+    "skeletonWarrior",
+    "skeletonArcher",
+    "knight1",
+    "knight2",
+    "knight3",
+    "blackWerewolf",
+    "whiteWerewolf",
+    "redWerewolf",
+    "gorgon1",
+    "gorgon2",
+    "gorgon3",
+    "ninjaMonk"
+  ],
+  "bioms": [
+    {
+      "enemyCount": [6,8],
+      "enemyTypes": ["knight1", "knight2", "knight3","ninjaMonk"],
+      "itemsCount": [8,10],
+      "object": ["wall", "saintMary", "wood", "wood2"],
+      "items": ["tree", "tree2", "rock2", "bush2", "tree", "tree2", "tree", "tree2"]
+    },
+    {
+      "count": 10,
+      "object": ["scarcrow", "hay", "hay2", "fence"],
+      "items": ["flower", "flower2", "flower3", "crop", "crop2", "crop3", "crop4", "crop5", "rock2"]
+    },
+    {
+      "count": 6,
+      "object": ["wall", "grave5"],
+      "items": ["grave", "grave2", "grave3", "grave4", "grave5", "saintMary"]
+    },
+    {
+      "count": 10,
+      "object": ["fireplace", "scarcrow", "bench"],
+      "items": ["tree", "tree2", "bush", "bush2", "bush3", "rock", "rock2", "rock3", "flower", "flower2", "flower3"]
+    },
+    {
+      "count": 10,
+      "object": ["grave", "grave2", "grave3", "grave4", "saintMary"],
+      "items": ["wall", "wall", "wall", "rock", "rock2", "rock3"]
+    },
+    {
+      "count": 6,
+      "object": ["saintMary", "bench", "fence"],
+      "items": ["bush", "bush2", "bush3", "bush", "bush2", "bush3", "rock"]
+    }
+  ]
+}
