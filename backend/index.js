@@ -1,17 +1,43 @@
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { ObjectId } from "mongodb";
 import * as db from "./db/mongo.js";
 import * as game from "./utils/gameUtils.js";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = "secret";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET environment variable is required");
+}
+
+const DISCONNECT_DELAY_MS = 5000;
+
+function isValidObjectId(id) {
+    return typeof id === "string" && ObjectId.isValid(id);
+}
+
+function isValidDirection(value) {
+    return typeof value === "boolean";
+}
+
+function isValidEnemiesArray(arr) {
+    if (!Array.isArray(arr)) return false;
+    return arr.every(
+        (e) =>
+            typeof e === "object" &&
+            e !== null &&
+            typeof e.type === "string" &&
+            typeof e.x === "number" &&
+            typeof e.y === "number" &&
+            typeof e.health === "number"
+    );
+}
 
 const httpServer = createServer();
-const io = new Server(httpServer, {
-    cors: { origin: "*" },
-});
 
-db.connect().catch(console.error);
+const io = new Server(httpServer, {
+    cors: { origin: process.env.CORS_ORIGIN || "http://localhost:5173" },
+});
 
 io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
@@ -25,16 +51,15 @@ io.use((socket, next) => {
         socket.isGuest = false;
         next();
     } catch {
-        next(new Error("Invalid token"));
+        // Stale or invalid token — treat as guest instead of rejecting
+        socket.isGuest = true;
+        next();
     }
 });
 
-let cancel;
+const disconnectTimers = new Map();
 
 io.on("connection", (socket) => {
-    if(cancel) {
-        cancel()
-    }
     const updateCurrentJWT = (level) => {
         socket.user.currentLevel = level._id;
         const newToken = jwt.sign(socket.user, JWT_SECRET);
@@ -52,28 +77,40 @@ io.on("connection", (socket) => {
         socket.isGuest = false;
     }
 
-    console.log("✅ Player connected:", socket.user.id);
-
-    socket.on("updateLevel", (data) => {
-        let updateLevelData = {};
-        updateLevelData[socket.user.id] = data;
-    });
-
-    const handleLevelTransition = async (level, nextLevel) => {
-        io.emit("currentLevel", { data: nextLevel });
-    };
-    const deleteLevel = async (levelId) => {
-       await game.deleteLevel(levelId);
-    };
-    function delay(ms, callback) {
-        const timeoutId = setTimeout(callback, ms);
-        return () => clearTimeout(timeoutId); // return cancel function
+    // Cancel any pending disconnect cleanup for this user
+    const existingTimer = disconnectTimers.get(socket.user.id);
+    if (existingTimer) {
+        existingTimer();
+        disconnectTimers.delete(socket.user.id);
     }
 
+    console.log("Player connected:", socket.user.id);
+
+    function delay(ms, callback) {
+        const timeoutId = setTimeout(callback, ms);
+        return () => clearTimeout(timeoutId);
+    }
 
     socket.on("nextLevel", async (currentId, right, enemies) => {
         try {
+            if (!isValidObjectId(currentId)) {
+                socket.emit("currentLevel", { error: "Invalid level ID" });
+                return;
+            }
+            if (!isValidDirection(right)) {
+                socket.emit("currentLevel", { error: "Invalid direction" });
+                return;
+            }
+            if (!isValidEnemiesArray(enemies)) {
+                socket.emit("currentLevel", { error: "Invalid enemies data" });
+                return;
+            }
+
             const level = await db.getLevelById(currentId);
+            if (!level) {
+                socket.emit("currentLevel", { error: "Level not found" });
+                return;
+            }
             level.enemies = enemies;
             await db.saveLevel(level);
 
@@ -82,8 +119,10 @@ io.on("connection", (socket) => {
 
             if (level[directionKey]) {
                 const nextLevel = await db.getLevelById(level[directionKey]);
-                await handleLevelTransition(level, nextLevel);
-                return;
+                if (nextLevel) {
+                    socket.emit("currentLevel", { data: nextLevel });
+                    return;
+                }
             }
 
             // Create new level if none exists
@@ -92,32 +131,42 @@ io.on("connection", (socket) => {
             newLevel[oppositeKey] = level._id;
 
             await Promise.all([db.saveLevel(level), db.saveLevel(newLevel)]);
-            await handleLevelTransition(level, newLevel);
+            socket.emit("currentLevel", { data: newLevel });
         } catch (err) {
             console.error("Error transitioning to next level:", err);
+            socket.emit("currentLevel", { error: "Failed to transition level" });
         }
     });
 
-
     socket.on("resetLevel", async () => {
-
-        if (socket.user.currentLevel){
-            game.deleteLevel(socket.user.currentLevel);
-        }
-
-        const level = await game.createLevel();
-        level.enemies = [];
-        await db.saveLevel(level);
-        updateCurrentJWT(level);
-        socket.emit("currentLevel", { data: level });
-    })
-        socket.on("getLevel", async (id) => {
         try {
+            if (socket.user.currentLevel) {
+                await game.deleteLevel(socket.user.currentLevel);
+            }
+
+            const level = await game.createLevel();
+            level.enemies = [];
+            await db.saveLevel(level);
+            updateCurrentJWT(level);
+            socket.emit("currentLevel", { data: level });
+        } catch (err) {
+            console.error("Error resetting level:", err);
+            socket.emit("currentLevel", { error: "Failed to reset level" });
+        }
+    });
+
+    socket.on("getLevel", async (id) => {
+        try {
+            if (id != null && !isValidObjectId(id)) {
+                socket.emit("currentLevel", { error: "Invalid level ID" });
+                return;
+            }
+
             let level;
             if (!id) {
                 if (socket.user.currentLevel) {
                     level = await db.getLevelById(socket.user.currentLevel);
-                    if (!level){
+                    if (!level) {
                         level = await game.createLevel();
                         level.enemies = [];
                         await db.saveLevel(level);
@@ -142,16 +191,54 @@ io.on("connection", (socket) => {
             socket.emit("currentLevel", { error: "Failed to get level" });
         }
     });
+
     socket.on("disconnect", () => {
-        cancel = delay(5000, () => {
-            game.deleteLevel(socket.user.currentLevel);
+        const cancelFn = delay(DISCONNECT_DELAY_MS, async () => {
+            try {
+                await game.deleteLevel(socket.user.currentLevel);
+            } catch (err) {
+                console.error("Error cleaning up level on disconnect:", err);
+            }
+            disconnectTimers.delete(socket.user.id);
         });
-        console.log("❌ Player disconnected:", socket.user.id);
+        disconnectTimers.set(socket.user.id, cancelFn);
+        console.log("Player disconnected:", socket.user.id);
     });
 });
 
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 5000;
 
-httpServer.listen(port, () => {
-    console.log("Socket.IO server running on ws://localhost:"+port);
-});
+// Connect to DB before accepting connections
+db.connect()
+    .then(() => {
+        const server = httpServer.listen(port, () => {
+            console.log("Socket.IO server running on ws://localhost:" + port);
+        });
+
+        // Graceful shutdown
+        function shutdown(signal) {
+            console.log(`${signal} received, shutting down gracefully...`);
+            io.emit("serverShutdown", { message: "Server is restarting" });
+
+            server.close(() => {
+                db.close().then(() => {
+                    console.log("Server shut down cleanly");
+                    process.exit(0);
+                }).catch(() => {
+                    process.exit(1);
+                });
+            });
+
+            setTimeout(() => {
+                console.error("Forced shutdown after timeout");
+                process.exit(1);
+            }, 10000);
+        }
+
+        process.on("SIGTERM", () => shutdown("SIGTERM"));
+        process.on("SIGINT", () => shutdown("SIGINT"));
+    })
+    .catch((err) => {
+        console.error("Failed to connect to MongoDB:", err);
+        process.exit(1);
+    });

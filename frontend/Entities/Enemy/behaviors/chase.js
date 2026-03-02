@@ -11,9 +11,9 @@ export function chasePlayer(enemy, player) {
 
     // Adjust hitbox offset based on direction
     if (direction < 0) {
-        enemy.body.setOffset(enemy.offSetX + enemy.offSetXLeft, enemy.offSetY);
+        enemy.body.setOffset(enemy.offsetX + enemy.offsetXLeft, enemy.offsetY);
     } else {
-        enemy.body.setOffset(enemy.offSetX, enemy.offSetY);
+        enemy.body.setOffset(enemy.offsetX, enemy.offsetY);
     }
 
     // Play walk animation if not already playing

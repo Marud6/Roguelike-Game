@@ -7,7 +7,6 @@ export default class EnemyFactory {
         const def = enemyArray.find(e => e.type === enemyData.type);
 
         const enemy = new Enemy(scene, enemyData.x, enemyData.y, def);
-        Object.assign(enemy, def);
         return enemy;
     }
 }

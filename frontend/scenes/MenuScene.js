@@ -27,13 +27,13 @@ export default class MenuScene extends Phaser.Scene {
     }
   }
   updateStamina(percent) {
-    if (this.staminahBar) {
+    if (this.staminaBarFull) {
       percent = Phaser.Math.Clamp(percent, 0, 1);
-      this.staminahBar.setCrop(
+      this.staminaBarFull.setCrop(
         0,
         0,
         this.staminaBarWidth * percent,
-        this.staminahBar.height
+        this.staminaBarFull.height
       );
     }
   }
@@ -59,7 +59,7 @@ export default class MenuScene extends Phaser.Scene {
       {
         y: height / 8,
         key: "staminaBar",
-        prop: "staminahBar",
+        prop: "staminaBarFull",
         widthProp: "staminaBarWidth",
       },
     ].forEach((bar) => {

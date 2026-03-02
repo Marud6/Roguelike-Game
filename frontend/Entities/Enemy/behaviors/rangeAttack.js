@@ -1,8 +1,9 @@
 // behaviors/rangeAttack.js
+import Phaser from "phaser";
 
 export function rangeAttack(enemy, player) {
 
-    enemy.canRange = false;
+    enemy.canRangeAttack = false;
     enemy.isAnimating = true;
 
     // Direction logic
@@ -12,9 +13,9 @@ export function rangeAttack(enemy, player) {
 
     // Hitbox offset
     if (direction < 0) {
-        enemy.body.setOffset(enemy.offSetX + enemy.offSetXLeft, enemy.offSetY);
+        enemy.body.setOffset(enemy.offsetX + enemy.offsetXLeft, enemy.offsetY);
     } else {
-        enemy.body.setOffset(enemy.offSetX, enemy.offSetY);
+        enemy.body.setOffset(enemy.offsetX, enemy.offsetY);
     }
 
     // Pick random ranged attack animation
@@ -52,12 +53,12 @@ export function rangeAttack(enemy, player) {
     enemy.once("animationcomplete-" + attackKey, () => {
         enemy.off("animationupdate", onUpdate);
         enemy.isAnimating = false;
-        enemy.isAttaking = false;
+        enemy.isAttacking = false;
     });
 
     // Cooldown reset
     enemy.scene.time.delayedCall(enemy.rangeAttackSpeed, () => {
-        enemy.canRange = true;
+        enemy.canRangeAttack = true;
     });
 
 }

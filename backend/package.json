@@ -1,5 +1,5 @@
 {
-  "name": "bakcend",
+  "name": "backend",
   "version": "1.0.0",
   "description": "",
   "license": "ISC",
@@ -12,17 +12,11 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
-    "http": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.20.0",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "@types/express": "^5.0.5",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^24.10.0",
-    "nodemon": "^3.1.10",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "nodemon": "^3.1.10"
   }
 }

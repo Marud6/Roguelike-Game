@@ -20,7 +20,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.setScale(3);
         this.body.setSize(35, 60);
         this.canAttack=true
-        this.body.setOffset(this.offSetX, this.offSetY);
+        this.body.setOffset(this.offsetX, this.offsetY);
         // Hitbox
         this.attackHitbox = scene.add.zone(0, 0, 40, 40);
         scene.physics.add.existing(this.attackHitbox);
@@ -31,7 +31,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
         //range
         this.rangeAttackSpeed=5000
         this.projectileTypes=1
-        this.canRange=true
+        this.canRangeAttack=true
         // Animations
 
         EnemyAnimation.createAnimations(scene,this);
@@ -51,20 +51,20 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
         if(this.isDead) return;
         this.anims.play(this.animKeys.hit);
         this.isAnimating=true
-        this.healPoints -= amount;
+        this.health -= amount;
 
         this.once("animationcomplete-"+this.animKeys.hit, () => {
-            if(this.healPoints<=0){
+            if(this.health<=0){
                 this.isDead=true
                 this.setVelocityX(0);
-                this.player.xp += this.xpGain;
+                if (this.player) this.player.xp += this.xpGain;
                 this.anims.play(this.animKeys.death);
                 this.scene.time.delayedCall(3000  , () => {
                     this.destroyEnemy();
                 });
             }
             this.isLeaping=false
-            this.isAttaking=false
+            this.isAttacking=false
             this.isAnimating=false
             this.canAttack=true
         })
@@ -75,7 +75,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
         if (this.isAnimating || this.isDead|| this.isLeaping) return;
         if (!player) return; // make sure player exists
         let dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
-        if(dist > this.attackRange && this.isRange && dist < this.rangeAttackRange && this.canRange){
+        if(dist > this.attackRange && this.isRanged && dist < this.rangeAttackRange && this.canRangeAttack){
             this.setVelocityX(0);
             rangeAttack(this,player)
         }else if( dist > this.attackRange && dist < this.leapRange && this.canLeap){
@@ -91,13 +91,13 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
             this.isChasing=true;
         } else if (dist <= this.attackRange && this.canAttack && this.body.touching.down) {
             this.setVelocityX(0);
-            if (!this.isAttaking) {
-                this.isAttaking = true;
+            if (!this.isAttacking) {
+                this.isAttacking = true;
                 attackHero(this);
                 const direction = player.x < this.x ? -1 : 1;
                 this.flipX = direction < 0;
                 this.scene.time.delayedCall(1000, () => {
-                    this.isAttaking = false;
+                    this.isAttacking = false;
                 });
             }
         } else if(this.isChasing===false || dist <= this.attackRange) {

@@ -14,11 +14,11 @@
     "gorgon3",
     "ninjaMonk"
   ],
-  "bioms": [
+  "enemyCount": { "min": 2, "max": 6 },
+  "spawnY": 693,
+  "biomes": [
     {
-      "enemyCount": [6,8],
-      "enemyTypes": ["knight1", "knight2", "knight3","ninjaMonk"],
-      "itemsCount": [8,10],
+      "count": 10,
       "object": ["wall", "saintMary", "wood", "wood2"],
       "items": ["tree", "tree2", "rock2", "bush2", "tree", "tree2", "tree", "tree2"]
     },

@@ -7,16 +7,16 @@ export default class Knight extends Phaser.Physics.Arcade.Sprite {
     this.damage = 0;
     this.health = 100;
     this.maxHealth=100;
-    this.Stamina = 1000;
+    this.stamina = 1000;
     this.maxStamina=1000
     this.level=0;
     this.levelToUse=0;
-    this.xp=10;
+    this.xp=0;
     this.xpForLevel=10
     this.scene = scene;
     this.isAnimating = false;
     this.isRolling=false
-    this.isDeath = false;
+    this.isDead = false;
     this.menuScene = menuScene;
 
     this.staminaRegen=0
@@ -27,6 +27,7 @@ export default class Knight extends Phaser.Physics.Arcade.Sprite {
     this.rollBonus=0;
 
     this.isCrouching=false
+    this.isInvincible=false
 
 
     // Add to scene and enable physics
@@ -143,11 +144,6 @@ export default class Knight extends Phaser.Physics.Arcade.Sprite {
     scene.load.spritesheet(
         "knightHit",
         "assets/Knight/Animations/_Hit.png",
-        { frameWidth: 120, frameHeight: 80 }
-    );
-    scene.load.spritesheet(
-        "knightTurn",
-        "assets/Knight/Animations/_TurnAround.png",
         { frameWidth: 120, frameHeight: 80 }
     );
 
@@ -363,6 +359,21 @@ export default class Knight extends Phaser.Physics.Arcade.Sprite {
         this.isCrouching=true
       }
     });
+
+    this.on("animationupdate", (animation, frame) => {
+      if (animation.key === "attackCrouch" && frame.index === 2) {
+        this.attack(100, 130, 200, 130);
+      }
+      else if (animation.key === "attack" && frame.index === 2) {
+        this.attack(150, 100, 250, 200);
+      }
+      else if (animation.key === "attackCombo" && frame.index === 3) {
+        this.attack(150, 100, 250, 200);
+      }
+      else if (animation.key === "attackStrong" && frame.index === 3) {
+        this.attack(120, 100, 230, 200);
+      }
+    });
   }
 
   updateKnightCollider(increase = 0) {
@@ -388,11 +399,12 @@ export default class Knight extends Phaser.Physics.Arcade.Sprite {
     this.attackHitbox.body.enable = false;
   }
   gotHit(amount,projectile=null){
-    if(this.isDeath|| this.isRolling)return
+    if(this.isDead|| this.isRolling || this.isInvincible)return
     if(projectile){projectile.destroy();}
 
     this.anims.play("hit");
     this.isAnimating=true
+    this.isInvincible=true
     this.health -= amount
     if(this.health <= 0){
       this.death()
@@ -401,10 +413,13 @@ export default class Knight extends Phaser.Physics.Arcade.Sprite {
       this.isAnimating=false
       this.isRolling=false
     })
+    this.scene.time.delayedCall(500, () => {
+      this.isInvincible=false
+    })
   }
 
   death(){
-    this.isDeath=true
+    this.isDead=true
     this.setVelocityX(0);
     this.anims.play("death");
     this.once("animationcomplete-death", () => {
@@ -430,7 +445,7 @@ export default class Knight extends Phaser.Physics.Arcade.Sprite {
 
 //spaming key jams animations
   update() {
-    if (this.isAnimating||this.isDeath ||this.isRolling) return;
+    if (this.isAnimating||this.isDead ||this.isRolling) return;
     this.setVelocityX(0);
     // Merge WASD + Arrow keys
 
@@ -438,34 +453,18 @@ export default class Knight extends Phaser.Physics.Arcade.Sprite {
       this.updateLevel()
     }
 
-    if(this.Stamina<this.maxStamina){
-      this.Stamina +=1+this.staminaRegen;
+    const dt = this.scene.game.loop.delta / 1000;
+    if(this.stamina<this.maxStamina){
+      this.stamina += (60 + this.staminaRegen * 60) * dt;
     }
     if(this.health<this.maxHealth){
-      this.health +=0.01+this.healthRegen;
+      this.health += (0.6 + this.healthRegen * 60) * dt;
     }
 
 
     if(this.anims.currentAnim?.key !== "crouchRun" && this.anims.currentAnim?.key !== "crouch" && this.anims.currentAnim?.key !== "crouchTransition"){
       this.isCrouching=false
     }
-    this.on("animationupdate", (animation, frame) => {
-      if (animation.key === "attackCrouch" && frame.index === 2) {
-        this.attack(100, 130, 200, 130);
-      }
-      else if (animation.key === "attack" && frame.index === 2) {
-        this.attack(150, 100, 250, 200);
-      }
-      else if (animation.key === "attackCombo" && frame.index === 3) {
-        this.attack(150, 100, 250, 200);
-      }
-      else if (animation.key === "attackStrong" && frame.index === 3) {
-        this.attack(120, 100, 230, 200);
-      }
-    });
-
-
-
     const left = this.cursors.left.isDown || this.wasd.left.isDown;
     const right = this.cursors.right.isDown || this.wasd.right.isDown;
     const up = this.cursors.up.isDown || this.wasd.up.isDown;
@@ -475,8 +474,8 @@ export default class Knight extends Phaser.Physics.Arcade.Sprite {
       Phaser.Input.Keyboard.JustDown(this.wasd.space);
     const keyQ=Phaser.Input.Keyboard.JustDown(this.wasd.q)
     const keyE=Phaser.Input.Keyboard.JustDown(this.wasd.e)
-      if (keyE && this.body.touching.down && this.Stamina>200) {
-        this.Stamina -=200;
+      if (keyE && this.body.touching.down && this.stamina>200) {
+        this.stamina -=200;
 
         if (down && this.body.touching.down && !this.isAnimating && this.anims.currentAnim?.key !== "attackCrouch") {
           this.damage = 10+this.damageBonus;
@@ -504,8 +503,8 @@ export default class Knight extends Phaser.Physics.Arcade.Sprite {
         }
 
       }
-    if (keyQ && this.body.touching.down && !this.isAnimating && this.Stamina>300) {
-      this.Stamina -=300;
+    if (keyQ && this.body.touching.down && !this.isAnimating && this.stamina>300) {
+      this.stamina -=300;
       if (down) {
         // Big crouch attack (attackCombo)
         if (this.anims.currentAnim?.key !== "attackCombo") {
@@ -535,8 +534,8 @@ export default class Knight extends Phaser.Physics.Arcade.Sprite {
     }
 
 
-    if (space && this.body.velocity.y < 0 && this.Stamina>100) {
-      this.Stamina -=100;
+    if (space && this.body.velocity.y < 0 && this.stamina>100) {
+      this.stamina -=100;
 
       if (down) {
         this.isRolling = true;

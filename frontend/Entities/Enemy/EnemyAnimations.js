@@ -16,7 +16,7 @@ export default class EnemyAnimation {
             const baseRes = enemy.resolution;
 
             const assets = [
-                [enemy.type + "Idle",  `assets/Enemies/${enemy.type}/idle.png`],
+                [enemy.type + "Idle",  `assets/Enemies/${enemy.type}/Idle.png`],
                 [enemy.type + "Hit",   `assets/Enemies/${enemy.type}/Hurt.png`],
                 [enemy.type + "Death", `assets/Enemies/${enemy.type}/Dead.png`],
                 [enemy.type + "Walk",  `assets/Enemies/${enemy.type}/Walk.png`],
@@ -33,7 +33,7 @@ export default class EnemyAnimation {
             }
 
             // Range attack animations
-            if (enemy.isRange) {
+            if (enemy.isRanged) {
                 for (let i = 1; i <= enemy.rangeAttackAnimation; i++) {
                     assets.push([`${enemy.type}rangeAttack${i}`, `assets/Enemies/${enemy.type}/rangeAttack${i}.png`]);
                 }
@@ -41,7 +41,7 @@ export default class EnemyAnimation {
                 for (let i = 1; i <= enemy.projectileAnimation; i++) {
                     scene.load.spritesheet(
                         `${enemy.type}projectile${i}`,
-                        `assets/Enemies/${enemy.type}/projectile${i}.png`,
+                        `assets/Enemies/${enemy.type}/Projectile${i}.png`,
                         { frameWidth: enemy.projectileRes, frameHeight: enemy.projectileRes }
                     );
                 }
@@ -66,7 +66,7 @@ export default class EnemyAnimation {
 
         const create = (key, sprite, frameRate, repeat = 0) => {
             if (!scene.anims.exists(key)) {
-                const frameCount = scene.textures.get(sprite).frameTotal;
+                const frameCount = scene.textures.get(sprite).frameTotal - 1;
                 scene.anims.create({
                     key,
                     frames: scene.anims.generateFrameNumbers(sprite, { start: 0, end: frameCount - 1 }),
@@ -93,7 +93,7 @@ export default class EnemyAnimation {
         }
 
         // Range attacks
-        if (enemyInstance.isRange) {
+        if (enemyInstance.isRanged) {
             for (let i = 1; i <= enemyInstance.rangeAttackAnimation; i++) {
                 create(`rangeAttack${type}${i}`, `${type}rangeAttack${i}`, 6);
             }
@@ -117,7 +117,7 @@ export default class EnemyAnimation {
                 `attack${type}${i + 1}`
             ),
 
-            rangeAttacks: enemy.isRange
+            rangeAttacks: enemy.isRanged
                 ? Array.from({ length: enemy.rangeAttackAnimation }, (_, i) =>
                     `rangeAttack${type}${i + 1}`
                 )

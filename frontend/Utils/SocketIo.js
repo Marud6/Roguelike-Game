@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 import GameScene from "../scenes/GameScene";
 let token = localStorage.getItem("jwt");
-const socket_server = import.meta.env.VITE_SOCKET_IO_URL || "localhost:3001"
+const socket_server = import.meta.env.VITE_SOCKET_IO_URL || "http://localhost:5000"
 
 const socket = io(socket_server, { auth: { token } });
 let gameScene = null;
@@ -19,7 +19,13 @@ socket.on("disconnect", () => {
 });
 
 socket.on("currentLevel", (data) => {
+    if (data.error) {
+        console.error("Server error:", data.error);
+        return;
+    }
+    if (gameScene && data.data) {
         gameScene.loadLevel(data);
+    }
 });
 
 socket.on("assignToken", (data) => {
@@ -32,10 +38,6 @@ socket.on("assignUsername", (data) => {
     console.log(data)
 });
 
-
-export function updateLevel(data) {
-    socket.emit("updateLevel", data );
-}
 
 export function resetLevel() {
     socket.emit("resetLevel" );

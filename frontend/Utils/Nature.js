@@ -11,7 +11,7 @@ export default class Nature {
         scene.load.image('rock2', 'assets/Environment/rock2.png');
         scene.load.image('rock3', 'assets/Environment/rock3.png');
         scene.load.image('saintMary', 'assets/Environment/saintMary.png');
-        scene.load.image('scarcrow', 'assets/Environment/scarcrow.png');
+        scene.load.image('scarcrow', 'assets/Environment/scarCrow.png');
         scene.load.image('wall', 'assets/Environment/wall.png');
         scene.load.image('grave', 'assets/Environment/grave.png');
         scene.load.image('grave2', 'assets/Environment/grave2.png');

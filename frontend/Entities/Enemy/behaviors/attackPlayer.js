@@ -1,4 +1,5 @@
 // behaviors/attackHero.js
+import Phaser from "phaser";
 
 function disableHitbox(enemy) {
     if (enemy.isDead) return;

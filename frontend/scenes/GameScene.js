@@ -4,7 +4,7 @@ import EnemyAnimation from "../Entities/Enemy/EnemyAnimations";
 import Projectile from "../Entities/Projectile.js";
 import EnemyFactory from "../Entities/Enemy/EnemyFactory"
 import Phaser from "phaser";
-import  {initSocket,resetLevel, sendGetLevel, sendMoveLevel, updateLevel} from "../Utils/SocketIo.js";
+import  {initSocket,resetLevel, sendGetLevel, sendMoveLevel} from "../Utils/SocketIo.js";
 import Player from "../Entities/Player";
 
 
@@ -40,9 +40,6 @@ export default class GameScene extends Phaser.Scene {
     // Knight
     this.knight = new Knight(this, 200, height - 500,this.menuScene);
     this.knight.setDepth(1);
-
-    //socket
-    this.prevData = {};
 
     // Enemies
     this.enemies = this.physics.add.group();
@@ -84,7 +81,7 @@ export default class GameScene extends Phaser.Scene {
   updateBars(knight){
     this.menuScene.updateXp(knight.xp/knight.xpForLevel)
     this.menuScene.updateHealth(knight.health/knight.maxHealth)
-    this.menuScene.updateStamina(knight.Stamina/knight.maxStamina)
+    this.menuScene.updateStamina(knight.stamina/knight.maxStamina)
   }
 
   joinNewPlayer(x,username){
@@ -95,7 +92,7 @@ export default class GameScene extends Phaser.Scene {
 
   updatePlayer(username,data){
     const player=this.players.find(player => player.username === username)
-    player.updateData(data);
+    if (player) player.updateData(data);
   }
 
   loadLevel(data) {
@@ -132,9 +129,9 @@ export default class GameScene extends Phaser.Scene {
       projectileInstance.setVelocityX(force);
     projectileInstance.body.setGravityY(-480);
     this.physics.add.overlap(
-        projectileInstance.body,
+        projectileInstance,
         this.knight,
-        (hitbox, knight) => knight.gotHit(damage,projectileInstance)
+        (projectile, knight) => knight.gotHit(damage,projectileInstance)
     );
   }
 
@@ -150,7 +147,7 @@ export default class GameScene extends Phaser.Scene {
             type: enemy.type,
             x: enemy.x,
             y: enemy.y,
-            health: enemy.healPoints
+            health: enemy.health
 
           }));
 
@@ -165,7 +162,7 @@ export default class GameScene extends Phaser.Scene {
             type: enemy.type,
             x: enemy.x,
             y: enemy.y,
-            health: enemy.healPoints
+            health: enemy.health
           }));
 
       sendMoveLevel(this.levelId,true, enemiesArray)
@@ -173,20 +170,9 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  updateLevelScene() {
-    const data = {};
-    if (this.knight.body.velocity.x!== this.prevData.x) data.x = this.knight.body.velocity.x;
-    if(this.knight.anims.currentAnim.key !== this.prevData.lastAnimation) data.lastAnimation = this.knight.anims.currentAnim.key;
-
-    if (Object.keys(data).length > 0) {
-      updateLevel(data);
-      this.prevData = { ...this.prevData, ...data };
-    }
-  }
   update() {
     this.updateBars(this.knight)
     this.toNextLevel()
-    this.updateLevelScene()
 
     // Update knight
     this.knight.update();
